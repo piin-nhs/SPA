@@ -39,7 +39,9 @@ public class HazelcastConfig {
         log.info("[Hazelcast] Detected LAN IP: {}", localIp);
 
         Config config = new Config();
-        config.setClusterName("flashsale-local");
+        config.setClusterName("flashsale-local-debug");
+        config.getJetConfig().setEnabled(true);
+        config.getSerializationConfig().getCompactSerializationConfig().addClass(Product.class);
 
         config.getNetworkConfig().setPublicAddress(localIp + ":5701");
         config.getNetworkConfig().getInterfaces()
@@ -58,6 +60,17 @@ public class HazelcastConfig {
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(config);
         log.info("[Hazelcast] Instance started. Cluster size: {}", hz.getCluster().getMembers().size());
         loadProductsAndStocks(hz);
+        
+        log.info("[Hazelcast] Creating SQL Mappings...");
+        hz.getSql().execute(
+                "CREATE OR REPLACE MAPPING products TYPE IMap OPTIONS (" +
+                "  'keyFormat'='java'," +
+                "  'keyJavaClass'='java.lang.String'," +
+                "  'valueFormat'='java'," +
+                "  'valueJavaClass'='iuh.fit.spa.product.Product'" +
+                ")"
+        );
+        
         return hz;
     }
 
